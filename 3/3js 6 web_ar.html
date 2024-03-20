@@ -69,9 +69,20 @@
 					let loader = new GLTFLoader().setPath( '../models/' );
 					loader.load( 'alice.glb', function ( gltf ) {
 						//將模型加入場景
-						gltf.scene.position.set( 0, 0, - 0.3 ).applyMatrix4( controller.matrixWorld );
-						gltf.scene.quaternion.setFromRotationMatrix( controller.matrixWorld );
-						scene.add( gltf.scene );
+						alert("loaded");
+						let m = new THREE.Vector3();
+					gltf.scene.traverse(function (child) {
+						if (child.isMesh) {
+							child.geometry.computeBoundingBox();
+							let size = child.geometry.boundingBox.getSize();
+							alert( size.y );
+						child.position.set( 0, 0, - 0.3 ).applyMatrix4( controller.matrixWorld );
+						child.quaternion.setFromRotationMatrix( controller.matrixWorld );
+						scene.add( child );
+
+						}
+					})
+
 					})
 				}
 

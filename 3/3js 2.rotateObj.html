@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - GLTFloader</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="js/main.css">
+    <style>
+        .myCSS {
+            overflow: hidden;
+            width: 800px;
+            height: 600px;
+            background: hsl(0, 0%, 10%);
+        }
+    </style>
+	</head>
+
+	<body>
+	<div id='myDIV' class='myCSS'></div>
+		<!-- Import maps polyfill -->
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "./build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
+
+		<script type="module">
+
+			import * as THREE from 'three';
+			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+			import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+			let camera, scene, renderer, controls,model;
+
+			init();
+			//render();
+
+			function init() {
+				const container = document.getElementById( 'myDIV' );
+				let w = container.clientWidth;
+				let h = container.clientHeight;
+				camera = new THREE.PerspectiveCamera( 45, w / h, 0.25, 20 );
+				camera.position.set( -3, 2.5, 3 );
+				scene = new THREE.Scene();
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( w, h );
+				renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.BasicShadowMap;
+				container.appendChild( renderer.domElement );
+				renderer.setClearColor(0x999999); //背景色
+				
+				let direct = new THREE.DirectionalLight(0xffffff, 1.0);//設定光源
+				direct.castShadow = true;
+				direct.position.set(6,20,6);
+				scene.add(direct);
+
+				controls = new OrbitControls( camera, renderer.domElement );
+				controls.minDistance = 2;
+				controls.maxDistance = 10;
+				controls.target.set( 0, 0, - 0.2 );//設定旋轉軌道中心
+		
+				let loader = new GLTFLoader().setPath( '../models/' );
+				loader.load( 'alice.glb', function ( gltf ) {
+					//處理影子設定
+					gltf.scene.traverse(function (child) {
+						if (child.isMesh) {
+							child.castShadow = true;
+							child.receiveShadow = false;
+							model=child;
+						}
+					})
+
+					scene.add( gltf.scene );
+					animate();
+					//render();
+				} );
+
+		// 建立一個平面地板,使用草地圖檔當材質set the ground plane with grass texture
+		const loaderT = new THREE.TextureLoader();
+		const groundTexture = loaderT.load( 'img/grasslight-big.jpg' );
+		groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
+		groundTexture.repeat.set( 25, 25 );
+		groundTexture.anisotropy = 16;
+		groundTexture.encoding = THREE.sRGBEncoding;
+
+		const groundMaterial = new THREE.MeshLambertMaterial( { map: groundTexture } );
+
+		let mesh = new THREE.Mesh( new THREE.PlaneGeometry( 200, 200 ), groundMaterial );
+		mesh.position.y = 0;
+		mesh.rotation.x = - Math.PI / 2;
+		mesh.receiveShadow = true;
+
+		scene.add( mesh );
+				window.addEventListener( 'resize', onWindowResize );
+
+			}
+
+			function onWindowResize() {
+				let w = renderer.domElement.clientWidth;
+				let h = renderer.domElement.clientHeight;
+				camera.aspect = w / h;
+				camera.updateProjectionMatrix();
+				renderer.setSize( w, h );
+				render();
+			}
+
+			//啟動動畫迴路
+			function animate(time) {
+				requestAnimationFrame(animate);
+				//依照目前的時間 (time)計算模型的旋轉角度
+				if (model) {
+					//model.rotation.x = time / 500;
+					//model.rotation.y = time / 400;
+					model.rotation.z = time / 600;
+				}
+				controls.update();
+				render();
+			}
+
+			//重繪畫面
+			function render() {
+				renderer.render( scene, camera );
+			}
+
+		</script>
+
+	</body>
+</html>

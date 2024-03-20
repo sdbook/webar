@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - GLTFloader</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="js/main.css">
+    <style>
+        .myCSS {
+            overflow: hidden;
+            width: 500px;
+            height: 300px;
+            background: hsl(0, 0%, 10%);
+        }
+    </style>
+	</head>
+
+	<body>
+	<div id="info">x</div><br/>
+	<div id='myDIV' class='myCSS'></div>
+		<!-- Import maps polyfill -->
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "./build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
+
+		<script type="module">
+
+			import * as THREE from 'three';
+			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+			import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+			let camera, scene, renderer, controls;
+			let model, mixer,clock;
+			
+			const KEYUP             = 38;        // up key
+			const KEYDOWN           = 40;        // down key
+			const KEYLEFT           = 37;        // left key
+			const KEYRIGHT          = 39;        // right key
+			const SPACE				= 32; 		//SPACE
+			const allActions = [];
+			
+			init();
+			//render();
+
+			function init() {
+				clock = new THREE.Clock(); //動作播放的時序
+				const container = document.getElementById( 'myDIV' );
+				let w = container.clientWidth;
+				let h = container.clientHeight;
+				camera = new THREE.PerspectiveCamera( 45, w / h, 0.25, 20 );
+				camera.position.set( - 1.8, 0.6, 2.7 );
+				scene = new THREE.Scene();
+
+				// model
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( w, h );
+				renderer.outputEncoding = THREE.sRGBEncoding;
+
+				container.appendChild( renderer.domElement );
+				renderer.setClearColor(0x999999); //背景色
+				let ambient = new THREE.AmbientLight(0xffffff, 1.0);//設定環境光
+				scene.add(ambient);
+
+				controls = new OrbitControls( camera, renderer.domElement );
+				controls.addEventListener( 'change', render ); // use if there is no animation loop
+				controls.minDistance = 2;
+				controls.maxDistance = 10;
+				//controls.target.set( 0, 0, 0 ); //設定旋轉軌道中心
+				controls.target.set( 0, 0, - 0.2 );
+				//controls.autoRotate = true; //啟用自動旋轉
+				//controls.update();				
+				const loader = new GLTFLoader().setPath( '../models/' );
+				loader.load( 'combined.glb', function ( gltf ) {
+
+					model = gltf.scene;
+					//scale down the model
+					model.scale.set(0.01, 0.01, 0.01);
+					//model.position.y += 1;
+					scene.add( model );
+/*
+					model.traverse( function ( object ) {
+						if ( object.isMesh ) object.castShadow = true;
+					} );
+*/				
+//					scene.add( gltf.scene );
+					
+					const animations = gltf.animations;
+					mixer = new THREE.AnimationMixer( model );
+
+					let numAnimations = animations.length;
+					for ( let i = 0; i !== numAnimations; ++ i ) {
+						let clip = animations[ i ];
+						const name = clip.name;
+						const action = mixer.clipAction( clip );						
+						action.setLoop(THREE.LoopOnce); //動作只撥放一次就停止
+						action.clampWhenFinished = true; //動作做完回復初始姿勢
+						//將動作物件，放入陣列中存放備用
+						allActions.push(action); //一般陣列，以數字作為指標
+					}
+					createBtns(); //創建按鈕
+					animate();
+
+					//render();
+				} );
+
+
+
+				window.addEventListener( 'resize', onWindowResize );
+
+			}
+
+			function createBtns() {
+				let div=document.getElementById('info');
+				
+				for (let name in allActions) {
+					let btn = document.createElement("button");
+					btn.innerHTML = name;
+					btn.addEventListener('click',function() {
+						const action = allActions[ this.innerHTML ];
+						//停止目前播放中的動作
+						mixer.stopAllAction();
+						//播放指定的動作
+						action.play();
+					});
+					//把按鈕加入DIV中
+					div.appendChild(btn);
+				}
+			}
+
+
+			function onWindowResize() {
+				let w = renderer.domElement.clientWidth;
+				let h = renderer.domElement.clientHeight;
+				camera.aspect = w / h;
+				camera.updateProjectionMatrix();
+				renderer.setSize( w, h );
+				render();
+			}
+
+			//啟動動畫迴路
+			function animate() {
+				requestAnimationFrame(animate);
+				mixer.update( clock.getDelta());
+				controls.update();
+				render();
+			}
+
+			//重繪畫面
+			function render() {
+				renderer.render( scene, camera );
+			}
+
+		//按鍵處理程式
+		document.addEventListener('keydown', function(e)
+		{
+			var key = e.keyCode;
+			console.log(key);
+			
+			let r=0; //模型的旋轉角度
+			let act=1;
+			switch( key ) //依照按鍵的碼，決定處理方式
+			{
+				case KEYUP:
+					r=0.5;
+					break;
+					
+				case KEYDOWN:
+					r=0;
+					break;
+					
+				case KEYLEFT:
+					r=0.75;
+					break;
+					
+				case KEYRIGHT:
+					r=0.25;
+					break;
+				case SPACE:
+					act=2;
+					break;
+				default:
+					r=-1;
+					break;
+			}
+			if (r>=0) {
+				if (act==2) {
+					playAction(act);
+				} else {
+					//將模型轉向
+					model.rotation.y=Math.PI * 2* r;
+					//播放指定動作
+					playAction(act);
+				}
+			}
+		});
+
+		function playAction(n) {
+			mixer.stopAllAction();
+			allActions[n].play();
+		}
+		
+
+		</script>
+
+	</body>
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - GLTFloader</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="js/main.css">
+    <style>
+        .myCSS {
+            overflow: hidden;
+            width: 500px;
+            height: 300px;
+            background: hsl(0, 0%, 10%);
+        }
+    </style>
+	</head>
+
+	<body>
+	<div id="info">x</div><br/>
+	<div id='myDIV' class='myCSS'></div>
+		<!-- Import maps polyfill -->
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "./build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
+
+		<script type="module">
+
+			import * as THREE from 'three';
+			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+			import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+			let camera, scene, renderer, controls;
+			let model, mixer,clock;
+
+			//物件，存放模型中的多個動作
+			const allActions = {};
+			
+			init();
+			//render();
+
+			function init() {
+				clock = new THREE.Clock();
+				//const container = document.createElement( 'div' );
+				const container = document.getElementById( 'myDIV' );
+				document.body.appendChild( container );
+				let w = container.clientWidth;
+				let h = container.clientHeight;
+				camera = new THREE.PerspectiveCamera( 45, w / h, 0.25, 20 );
+				camera.position.set( - 1.8, 0.6, 2.7 );
+				scene = new THREE.Scene();
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( w, h );
+				renderer.outputEncoding = THREE.sRGBEncoding;
+
+				container.appendChild( renderer.domElement );
+				renderer.setClearColor(0x999999); //背景色
+				let ambient = new THREE.AmbientLight(0xffffff, 1.0);//設定環境光
+				scene.add(ambient);
+
+				controls = new OrbitControls( camera, renderer.domElement );
+				controls.addEventListener( 'change', render ); // use if there is no animation loop
+				controls.minDistance = 2;
+				controls.maxDistance = 10;
+				controls.target.set( 0, 0, - 0.2 );//設定旋轉軌道中心
+				controls.autoRotate = true; //啟用自動旋轉
+			
+				const loader = new GLTFLoader().setPath( '../models/' );
+				loader.load( 'combined.glb', function ( gltf ) {
+
+					model = gltf.scene;
+					//scale down the model
+					model.scale.set(0.01, 0.01, 0.01);
+					scene.add( model );
+					
+					//取得模型中的所有動作資料
+					const animations = gltf.animations;
+					//建立一個動作管理器
+					mixer = new THREE.AnimationMixer( model );
+
+					//用迴圈逐一取出動作資料，放入物件中以便之後使用
+					let numAnimations = animations.length;
+					for ( let i = 0; i !== numAnimations; ++ i ) {
+						let clip = animations[ i ];
+						const name = clip.name;
+						const action = mixer.clipAction( clip );						
+						//action.setLoop(THREE.LoopOnce); //動作只撥放一次就停止
+						//action.clampWhenFinished = true; //動作做完回復初始姿勢
+						
+						//把動作存入物件中
+						allActions[name] = action; //以動作名稱作為陣列指標
+					}
+					createBtns(); //建立畫面按鈕
+					animate(); //開始渲染迴圈
+				} );
+
+
+
+				window.addEventListener( 'resize', onWindowResize );
+
+			}
+
+			function createBtns() {
+				let div=document.getElementById('info'); //取得存放按鈕的DIV
+				//把剛剛存起來的動作，綁定到個別按鈕click事件中來撥放
+				for (let name in allActions) {
+					//建立一個按鈕
+					let btn = document.createElement("button");
+					//設定按鈕文字與onclick 處理函數
+					btn.innerHTML = name;					
+					btn.addEventListener('click',function() {
+						//當按鈕被按到時
+						const action = allActions[ this.innerHTML ];
+						//停止目前播放中的動作
+						mixer.stopAllAction();
+						//播放綁定的那個動作
+						action.play();
+					});
+					div.appendChild(btn);
+				}
+			}
+
+
+			function onWindowResize() {
+				let w = renderer.domElement.clientWidth;
+				let h = renderer.domElement.clientHeight;
+				camera.aspect = w / h;
+				camera.updateProjectionMatrix();
+				renderer.setSize( w, h );
+				render();
+			}
+
+			//啟動動畫迴路
+			function animate() {
+				requestAnimationFrame(animate);
+				mixer.update( clock.getDelta());
+				controls.update();
+				render();
+			}
+
+			//重繪畫面
+			function render() {
+				renderer.render( scene, camera );
+			}
+
+		</script>
+
+	</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - GLTFloader</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="js/main.css">
+    <style>
+        .myCSS {
+            overflow: hidden;
+            width: 500px;
+            height: 300px;
+            background: hsl(0, 0%, 10%);
+        }
+    </style>
+	</head>
+
+	<body>
+	<div id='myDIV' class='myCSS'></div>
+		<!-- Import maps polyfill -->
+		<!-- 設定匯入js程式庫目錄的的別名 -->
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "./build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
+
+		<script type="module">
+			//import necessary modules
+			//three.js 主模組
+			import * as THREE from 'three';
+			//滑鼠控制視角轉動套件
+			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+			//gltf/GLB檔案格式套件
+			import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+			//選模模組內公用變數
+			let camera, scene, renderer, controls;
+
+			//呼叫起始函數
+			init();
+
+			function init() {
+				//const container = document.createElement( 'div' );
+				//document.body.appendChild( container );
+				
+				//取得顯示用的網頁div
+				const container = document.getElementById( 'myDIV' );
+	
+				//取得div的長寬
+				let w = container.clientWidth;
+				let h = container.clientHeight;
+
+
+				//宣告一個3D場景
+				scene = new THREE.Scene();
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.outputEncoding = THREE.sRGBEncoding;
+				//設定場景的長寬
+				renderer.setSize( w, h );
+				//設定場景的底色
+				renderer.setClearColor(0x999999); //背景色
+				
+				//將3D場景放入網頁裡的DIV (container)中
+				container.appendChild( renderer.domElement );
+
+				//加入一盞燈(型態為:環境光 AmbientLight)
+				let ambient = new THREE.AmbientLight(0xffffff, 1.0);//設定環境光
+				scene.add(ambient);
+				
+				//宣告一個相機鏡頭 (渲染時的視角)
+				camera = new THREE.PerspectiveCamera( 45, w / h, 0.25, 20 );
+				//設定相機位置
+				camera.position.set( - 1.8, 0.6, 2.7 );
+
+				//建立一個視角控制器 (綁定相機)
+				controls = new OrbitControls( camera, renderer.domElement );
+				//controls.addEventListener( 'change', render ); // use if there is no animation loop
+				
+				//設定鏡頭靠最近 跟 移動最遠的上下限
+				controls.minDistance = 2;
+				controls.maxDistance = 10;
+				
+				//controls.target.set( 0, 0, 0 ); //設定旋轉軌道中心
+				controls.target.set( 0, 0, - 0.2 );
+				
+				controls.autoRotate = true; //啟用自動旋轉
+
+				//建立模型載入器，並載入3D模型
+				const loader = new GLTFLoader().setPath( '../models/' );
+				loader.load( 'alice.glb', function ( gltf ) {
+					//callback function, 載入後將模型加入場景
+					scene.add( gltf.scene );
+					//開始顯示迴圈
+					animate();
+				} );
+
+
+				//萬一視窗變動大小時，呼叫處理程式
+				window.addEventListener( 'resize', onWindowResize );
+
+			}
+
+			//依照新的長寬，更新場景大小與轉換矩陣
+			function onWindowResize() {
+				let w = renderer.domElement.clientWidth;
+				let h = renderer.domElement.clientHeight;
+				camera.aspect = w / h;
+				camera.updateProjectionMatrix();
+				renderer.setSize( w, h );
+				render();
+			}
+
+			//啟動動畫迴路
+			function animate() {
+				//等待下一次畫面更新的時機
+				requestAnimationFrame(animate);
+				//更新控制器的位置與視角
+				controls.update();
+				//喧染新畫面
+				render();
+			}
+
+			//重繪畫面
+			function render() {
+				renderer.render( scene, camera );
+			}
+
+		</script>
+
+	</body>
+</html>

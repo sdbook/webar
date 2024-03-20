@@ -69,8 +69,9 @@
 					let loader = new GLTFLoader().setPath( '../models/' );
 					loader.load( 'alice.glb', function ( gltf ) {
 						//將模型加入場景
-						scene.add( gltf.scene );
-					} );
+					gltf.scene.position.set( 0, 0, - 0.3 ).applyMatrix4( controller.matrixWorld );
+					gltf.scene.quaternion.setFromRotationMatrix( controller.matrixWorld );
+					scene.add( gltf.scene );
 				}
 
 				controller = renderer.xr.getController( 0 );

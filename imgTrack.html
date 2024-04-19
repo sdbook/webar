@@ -34,10 +34,10 @@
 
 		<!-- the url of nft needs to use absolute path from root / -->
         <a-nft
-            type='nft' url='webar/assets/doraemon300'
+            type='nft' url='/webar/assets/doraemon300'
             smooth='true' smoothCount='10' smoothTolerance='0.01' smoothThreshold='5'>
             <a-entity
-                gltf-model='/webar/models/girlDancing.glb'
+                gltf-model='./models/girlDancing.glb'
                 scale="80 80 80"
                 position="0 100 -100"
                 animation-mixer="clip: *; loop: once; clampWhenFinished: true;"
@@ -46,7 +46,7 @@
         </a-nft>
 		<!-- the url of nft needs to use absolute path from root / -->
        <a-nft
-            type='nft' url='webar/assets/logo'
+            type='nft' url='/webar/assets/logo'
             smooth='true' smoothCount='10' smoothTolerance='0.01' smoothThreshold='5'>
             <a-entity
                 gltf-model='./models/CesiumMan.gltf'
@@ -56,9 +56,9 @@
             </a-entity>
         </a-nft>
        <a-nft
-            type='nft' url='webar/assets/nft1'
+            type='nft' url='/webar/assets/nft1'
             smooth='true' smoothCount='10' smoothTolerance='0.01' smoothThreshold='5'>
-<a-box position='0 0.5 0' color="yellow"></a-box>
+<a-box position='10 5 10' height="40" width="10" color="yellow"></a-box>
         </a-nft>
 	    <a-entity camera></a-entity>
     </a-scene>

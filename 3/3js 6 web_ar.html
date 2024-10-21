@@ -29,9 +29,12 @@
 
 			import * as THREE from 'three';
 			import { ARButton } from 'three/addons/webxr/ARButton.js';
+			//gltf/GLB檔案格式套件
+			import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-			let camera, scene, renderer;
+			let camera, scene, renderer,model;
 			let controller;
+			let isModelLoaded = false;
 
 			init();
 			animate();
@@ -64,26 +67,21 @@
 				//
 
 				const geometry = new THREE.CylinderGeometry( 0, 0.05, 0.2, 32 ).rotateX( Math.PI / 2 );
+				let loader = new GLTFLoader().setPath( '../models/' );
+				loader.load( 'alice.glb', function ( gltf ) {
+					//將模型加入場景
+					gltf.scene.scale.set(0.1,0.1,0.1);
+					model = gltf.scene;
+					isModelLoaded = true;
+				})
 
 				function onSelect() {
-					let loader = new GLTFLoader().setPath( '../models/' );
-					loader.load( 'alice.glb', function ( gltf ) {
-						//將模型加入場景
-						alert("loaded");
-						let m = new THREE.Vector3();
-					gltf.scene.traverse(function (child) {
-						if (child.isMesh) {
-							child.geometry.computeBoundingBox();
-							let size = child.geometry.boundingBox.getSize();
-							alert( size.y );
-						child.position.set( 0, 0, - 0.3 ).applyMatrix4( controller.matrixWorld );
-						child.quaternion.setFromRotationMatrix( controller.matrixWorld );
-						scene.add( child );
-
-						}
-					})
-
-					})
+					if (isModelLoaded) {
+						let copy = model.clone();
+						copy.position.set( 0, 0, - 0.3 ).applyMatrix4( controller.matrixWorld );
+						copy.quaternion.setFromRotationMatrix( controller.matrixWorld );
+						scene.add(copy);
+					}
 				}
 
 
